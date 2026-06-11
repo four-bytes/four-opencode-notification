@@ -20,7 +20,8 @@ export class WebhookSender {
 
     try {
       const { formatForProvider } = await import("./formatters/index.js");
-      const body = formatForProvider(target.provider, payload);
+      const formatPreference = target.format ?? "flat";
+      const body = formatForProvider(target.provider, payload, formatPreference);
 
       const response = await fetch(url, {
         method: "POST",

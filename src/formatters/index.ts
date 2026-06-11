@@ -7,14 +7,18 @@ import { format as formatGeneric } from "./generic.js";
 /**
  * Dispatch payload formatting to the correct provider formatter.
  */
-export function formatForProvider(provider: Provider, payload: NotifyPayload): object {
+export function formatForProvider(
+  provider: Provider,
+  payload: NotifyPayload,
+  format?: "adaptive" | "flat",
+): object {
   switch (provider) {
     case "discord":
       return formatDiscord(payload);
     case "slack":
       return formatSlack(payload);
     case "msteams":
-      return formatMsteams(payload);
+      return formatMsteams(payload, format ?? "flat");
     case "generic":
       return formatGeneric(payload);
     default:

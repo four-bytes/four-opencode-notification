@@ -7,6 +7,7 @@ export interface NotifyTarget {
   url?: string;
   enabled?: boolean;
   throttleSeconds?: number;
+  format?: "adaptive" | "flat";  // NEW: MS Teams card format (default: "flat")
 }
 
 export interface NotifyConfig {
@@ -15,6 +16,7 @@ export interface NotifyConfig {
     throttleSeconds?: number;
     summaryMode?: "brief" | "final";
     include?: string[];
+    format?: "adaptive" | "flat";  // NEW
   };
   targets: NotifyTarget[];
   routes?: Record<string, string[]>;

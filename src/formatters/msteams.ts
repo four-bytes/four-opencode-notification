@@ -3,30 +3,64 @@
 
 import type { NotifyPayload } from "../types.js";
 
-/**
- * MS Teams formatter — flat JSON for Power Automate / Workflows.
- *
- * The Power Automate template expects top-level fields:
- *   title  → bold header
- *   body   → text (newlines become <br> in the template)
- *
- * Additional fields (level, summary, metadata) are included
- * as top-level keys for optional use in the workflow template.
- */
-export function format(payload: NotifyPayload): object {
-  const levelPrefix =
-    payload.level === "error" ? "🔴 "
-    : payload.level === "warn" ? "🟡 "
-    : "🔵 ";
+const levelPrefix = (level: string) =>
+  level === "error" ? "🔴 " : level === "warn" ? "🟡 " : "🔵 ";
 
+/** Adaptive Card format — rich Teams card with structured layout */
+function formatAdaptive(payload: NotifyPayload): object {
+  const body: Array<Record<string, unknown>> = [];
+
+  body.push({
+    type: "TextBlock",
+    text: `${levelPrefix(payload.level)}${payload.title}`,
+    weight: "Bolder",
+    size: "Medium",
+    wrap: true,
+  });
+
+  for (const line of payload.body.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed) {
+      body.push({ type: "TextBlock", text: trimmed, wrap: true });
+    }
+  }
+
+  if (payload.metadata) {
+    for (const [key, value] of Object.entries(payload.metadata)) {
+      body.push({
+        type: "TextBlock",
+        text: `${key}: ${value}`,
+        wrap: true,
+        size: "Small",
+        isSubtle: true,
+      });
+    }
+  }
+
+  return {
+    type: "message",
+    attachments: [{
+      contentType: "application/vnd.microsoft.card.adaptive",
+      contentUrl: null,
+      content: {
+        $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+        type: "AdaptiveCard",
+        version: "1.4",
+        body,
+      },
+    }],
+  };
+}
+
+/** Flat JSON format — for Power Automate templates that expect top-level fields */
+function formatFlat(payload: NotifyPayload): object {
   const result: Record<string, unknown> = {
-    title: `${levelPrefix}${payload.title}`,
+    title: `${levelPrefix(payload.level)}${payload.title}`,
     body: payload.body,
     level: payload.level,
     summary: payload.summary || false,
   };
 
-  // Flatten metadata into top-level fields (e.g., project → "project: value")
   if (payload.metadata) {
     for (const [key, value] of Object.entries(payload.metadata)) {
       result[key] = value;
@@ -34,4 +68,15 @@ export function format(payload: NotifyPayload): object {
   }
 
   return result;
+}
+
+/**
+ * Format a notification payload for MS Teams.
+ * @param payload — the notification data
+ * @param format — "adaptive" (rich card) or "flat" (simple JSON, default)
+ */
+export function format(payload: NotifyPayload, cardFormat: "adaptive" | "flat" = "flat"): object {
+  return cardFormat === "adaptive"
+    ? formatAdaptive(payload)
+    : formatFlat(payload);
 }

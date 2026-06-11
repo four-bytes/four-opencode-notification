@@ -19,7 +19,7 @@ Pointer to central standards: `~/.personal-config/ai-shared/AGENTS.md` and meta-
 ## This Plugin
 - Plugin name: four-opencode-notification
 - Description: Multi-provider webhook notification plugin (Discord, Slack, MS Teams, generic) — custom notify_send tool + event hooks + team patterns. Source: Perplexity P50.
-- Status: Sprint P14 (bootstrap)
+- Status: Sprint P14 (implemented)
 
 ## Workflow
 Issues → Branch → PR → Merge (feature workflow)

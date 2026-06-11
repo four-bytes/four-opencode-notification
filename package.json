@@ -1,13 +1,16 @@
 {
   "name": "@four-bytes/four-opencode-notification",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-provider webhook notification plugin (Discord, Slack, MS Teams, generic) — custom notify_send tool + event hooks + team patterns. Source: Perplexity P50.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/four-opencode-notification.js",
   "scripts": {
-    "build": "bun build src/four-opencode-notification.ts --outdir=dist --target=bun",
+    "build": "bun build src/four-opencode-notification.ts --outdir dist --target bun --format esm",
     "test": "bun test"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.15.13"
   },
   "keywords": ["opencode", "opencode-plugin", "four-bytes"]
 }

@@ -1,14 +1,48 @@
-// TODO: opencode plugin API integration
-// See https://docs.opencode.ai/plugins
+import type { Plugin } from "@opencode-ai/plugin";
+import { notifySendTool } from "./tools/notify-send.js";
+import { notificationHooks } from "./hooks.js";
+import { logDebugEvent } from "./debug-logger.js";
 
-// Env-gated debug logging (activate via CC_DEBUG=true):
-//   import { logDebugEvent } from "./debug-logger.js";
-//
-// Usage inside any plugin hook:
-//   logDebugEvent("hook.name", { relevantField: value });
-// Writes JSONL to ~/.cache/opencode/four-opencode-notification/debug-{date}.jsonl
+const FourOpencodeNotification: Plugin = async (ctx) => {
+  logDebugEvent("plugin.loaded", { directory: ctx.directory });
 
-export function register(): void {
-  // Register hooks and/or tools with the opencode plugin API
-  throw new Error("Not implemented");
-}
+  return {
+    tool: {
+      notify_send: notifySendTool,
+    },
+
+    /**
+     * Event handler — dispatches to named hook functions based on event type.
+     */
+    event: async (input) => {
+      const { type, properties } = input.event;
+
+      try {
+        if (type === "session.idle") {
+          await notificationHooks["session.idle"]({ properties });
+        } else if (type === "session.error") {
+          await notificationHooks["session.error"]({ properties });
+        }
+      } catch {
+        // Silent — never throw from event hooks
+      }
+    },
+
+    /**
+     * Permission hook — dispatches when permission is asked.
+     */
+    "permission.ask": async (input, output) => {
+      try {
+        await notificationHooks["permission.asked"]({
+          permission: input.permission,
+          patterns: input.patterns,
+        });
+        // Never change output.status — pass through
+      } catch {
+        // Silent — never throw from permission hooks
+      }
+    },
+  };
+};
+
+export default FourOpencodeNotification;

@@ -3,6 +3,8 @@ import { webhookSender } from "./webhook-sender.js";
 import { rateLimiter } from "./rate-limiter.js";
 import type { NotifyPayload, NotifyTarget } from "./types.js";
 
+type ToastFn = (message: string, variant?: "info" | "success" | "warning" | "error", title?: string) => void;
+
 async function sendToRoutes(
   config: ReturnType<typeof loadNotifyConfig>,
   eventName: string,
@@ -30,76 +32,84 @@ async function sendToRoutes(
   }
 }
 
-export const notificationHooks = {
-  "session.idle": async (event: {
-    properties?: { sessionID?: string };
-  }) => {
-    const cwd = process.cwd();
-    const config = loadNotifyConfig(cwd);
+export function createNotificationHooks(toast: ToastFn) {
+  return {
+    "session.idle": async (event: {
+      properties?: { sessionID?: string };
+    }) => {
+      const cwd = process.cwd();
+      const config = loadNotifyConfig(cwd);
 
-    if (!config.routes?.["session.idle"]) return;
+      if (!config.routes?.["session.idle"]) return;
 
-    const include = config.defaults?.include ?? [];
-    const metadata: Record<string, string> = {};
-    if (include.includes("project")) metadata.project = cwd.split("/").pop() || cwd;
-    if (include.includes("sessionId") && event.properties?.sessionID)
-      metadata.sessionId = event.properties.sessionID;
+      const include = config.defaults?.include ?? [];
+      const metadata: Record<string, string> = {};
+      if (include.includes("project")) metadata.project = cwd.split("/").pop() || cwd;
+      if (include.includes("sessionId") && event.properties?.sessionID)
+        metadata.sessionId = event.properties.sessionID;
 
-    await sendToRoutes(config, "session.idle", {
-      title: "Session complete",
-      body: `Session completed at ${new Date().toISOString()}`,
-      level: "info",
-      summary: config.defaults?.summaryMode === "final",
-      metadata,
-    });
-  },
+      await sendToRoutes(config, "session.idle", {
+        title: "Session complete",
+        body: `Session completed at ${new Date().toISOString()}`,
+        level: "info",
+        summary: config.defaults?.summaryMode === "final",
+        metadata,
+      });
 
-  "session.error": async (event: {
-    properties?: {
-      sessionID?: string;
-      error?: { message?: string; name?: string };
-    };
-  }) => {
-    const cwd = process.cwd();
-    const config = loadNotifyConfig(cwd);
+      toast("Webhook sent — session completed", "success", "Notification");
+    },
 
-    if (!config.routes?.["session.error"]) return;
+    "session.error": async (event: {
+      properties?: {
+        sessionID?: string;
+        error?: { message?: string; name?: string };
+      };
+    }) => {
+      const cwd = process.cwd();
+      const config = loadNotifyConfig(cwd);
 
-    const errorMsg =
-      event.properties?.error?.message ||
-      event.properties?.error?.name ||
-      "Unknown error";
+      if (!config.routes?.["session.error"]) return;
 
-    await sendToRoutes(config, "session.error", {
-      title: "Session error",
-      body: errorMsg,
-      level: "error",
-      metadata: {
-        project: cwd.split("/").pop() || cwd,
-      },
-    });
-  },
+      const errorMsg =
+        event.properties?.error?.message ||
+        event.properties?.error?.name ||
+        "Unknown error";
 
-  "permission.asked": async (event: {
-    permission?: string;
-    patterns?: string[];
-  }) => {
-    const cwd = process.cwd();
-    const config = loadNotifyConfig(cwd);
+      await sendToRoutes(config, "session.error", {
+        title: "Session error",
+        body: errorMsg,
+        level: "error",
+        metadata: {
+          project: cwd.split("/").pop() || cwd,
+        },
+      });
 
-    if (!config.routes?.["permission.asked"]) return;
+      toast(`Webhook sent — ${errorMsg.substring(0, 60)}`, "error", "Notification");
+    },
 
-    const command = event.permission || "unknown";
-    const patterns = event.patterns?.join(", ") || "none";
+    "permission.asked": async (event: {
+      permission?: string;
+      patterns?: string[];
+    }) => {
+      const cwd = process.cwd();
+      const config = loadNotifyConfig(cwd);
 
-    await sendToRoutes(config, "permission.asked", {
-      title: "Permission requested",
-      body: `Permission: ${command}\nPatterns: ${patterns}`,
-      level: "warn",
-      metadata: {
-        project: cwd.split("/").pop() || cwd,
-        command,
-      },
-    });
-  },
-};
+      if (!config.routes?.["permission.asked"]) return;
+
+      const command = event.permission || "unknown";
+      const patterns = event.patterns?.join(", ") || "none";
+
+      await sendToRoutes(config, "permission.asked", {
+        title: "Permission requested",
+        body: `Permission: ${command}\nPatterns: ${patterns}`,
+        level: "warn",
+        metadata: {
+          project: cwd.split("/").pop() || cwd,
+          command,
+        },
+      });
+
+      toast(`Webhook sent — permission: ${command}`, "warning", "Notification");
+    },
+  };
+}

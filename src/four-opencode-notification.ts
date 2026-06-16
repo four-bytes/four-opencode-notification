@@ -55,6 +55,25 @@ const FourOpencodeNotification: Plugin = async (ctx) => {
         // Silent — never throw from permission hooks
       }
     },
+
+    "tool.execute.after": async (input) => {
+      try {
+        const { tool: toolName, args } = input;
+        if (toolName === "notify_send" && args?.summary === true) {
+          await hooks["work.finished"]({
+            title: (args?.title as string) || "Untitled",
+            body: (args?.body as string) || "",
+            metadata: (args?.metadata as Record<string, string>) || {},
+          });
+        } else if (toolName === "question") {
+          await hooks["question.asked"]({
+            questions: (args?.questions as Array<{ question: string }>) || [],
+          });
+        }
+      } catch {
+        // Silent
+      }
+    },
   };
 };
 

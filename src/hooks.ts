@@ -34,6 +34,55 @@ async function sendToRoutes(
 
 export function createNotificationHooks(toast: ToastFn) {
   return {
+    "work.finished": async (event: {
+      title: string;
+      body: string;
+      metadata?: Record<string, string>;
+    }) => {
+      const cwd = process.cwd();
+      const config = loadNotifyConfig(cwd);
+
+      if (!config.routes?.["work.finished"]) return;
+
+      await sendToRoutes(config, "work.finished", {
+        title: `Work finished: ${event.title}`,
+        body: event.body,
+        level: "info",
+        summary: true,
+        metadata: {
+          project: cwd.split("/").pop() || cwd,
+          ...(event.metadata || {}),
+        },
+      });
+
+      toast("Webhook sent — work finished", "success", "Notification");
+    },
+
+    "question.asked": async (event: {
+      questions: Array<{ question: string }>;
+    }) => {
+      const cwd = process.cwd();
+      const config = loadNotifyConfig(cwd);
+
+      if (!config.routes?.["question.asked"]) return;
+
+      let questionText = event.questions?.[0]?.question || "";
+      if (questionText.length > 200) {
+        questionText = questionText.substring(0, 200);
+      }
+
+      await sendToRoutes(config, "question.asked", {
+        title: "Question asked",
+        body: questionText,
+        level: "warn",
+        metadata: {
+          project: cwd.split("/").pop() || cwd,
+        },
+      });
+
+      toast("Webhook sent — question asked", "warning", "Notification");
+    },
+
     "session.idle": async (event: {
       properties?: { sessionID?: string };
     }) => {

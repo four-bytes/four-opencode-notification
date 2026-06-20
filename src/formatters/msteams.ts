@@ -55,16 +55,19 @@ function formatAdaptive(payload: NotifyPayload): object {
 /** Flat JSON format — for Power Automate templates that expect top-level fields */
 function formatFlat(payload: NotifyPayload): object {
   const result: Record<string, unknown> = {
-    title: `${levelPrefix(payload.level)}${payload.title}`,
+    title: payload.title,
     body: payload.body,
     level: payload.level,
     summary: payload.summary || false,
+    timestamp: new Date().toISOString(),
+    facts: [],
   };
 
   if (payload.metadata) {
-    for (const [key, value] of Object.entries(payload.metadata)) {
-      result[key] = value;
-    }
+    result.facts = Object.entries(payload.metadata).map(([name, value]) => ({
+      name,
+      value,
+    }));
   }
 
   return result;

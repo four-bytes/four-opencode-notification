@@ -1,7 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { notifySendTool } from "./tools/notify-send.js";
 import { createNotificationHooks } from "./hooks.js";
-import { logDebugEvent } from "./debug-logger.js";
 
 const FourOpencodeNotification: Plugin = async (ctx) => {
   // Log via opencode SDK (AGENTS.md convention: use client.app.log(), not console.*)
@@ -15,9 +14,6 @@ const FourOpencodeNotification: Plugin = async (ctx) => {
     .catch(() => {
       // Silent — never throw from logging
     });
-
-  // File-based debug logging (separate from TUI logging)
-  logDebugEvent("plugin.loaded", { directory: ctx.directory });
 
   // Toast wrapper — calls opencode TUI toast API
   const toast = (

@@ -6,10 +6,12 @@ const FourOpencodeNotification: Plugin = async (ctx) => {
   // Log via opencode SDK (AGENTS.md convention: use client.app.log(), not console.*)
   ctx.client?.app
     ?.log({
-      service: "four-opencode-notification",
-      level: "info",
-      message: `Plugin loaded in ${ctx.directory}`,
-      extra: { directory: ctx.directory },
+      body: {
+        service: "four-opencode-notification",
+        level: "info",
+        message: `Plugin loaded in ${ctx.directory}`,
+        extra: { directory: ctx.directory },
+      },
     })
     .catch(() => {
       // Silent — never throw from logging
@@ -56,9 +58,14 @@ const FourOpencodeNotification: Plugin = async (ctx) => {
 
     "permission.ask": async (input, output) => {
       try {
+        const patterns = input.pattern == null
+          ? []
+          : Array.isArray(input.pattern)
+            ? input.pattern
+            : [input.pattern];
         await hooks["permission.asked"]({
-          permission: input.permission,
-          patterns: input.patterns,
+          permission: input.type,
+          patterns,
         });
       } catch {
         // Silent — never throw from permission hooks

@@ -3,6 +3,4 @@ dist/
 .env
 .env.*
 !.env.example
-bun.lockb
-bun.lock
 .DS_Store
